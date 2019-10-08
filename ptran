@@ -1,0 +1,21 @@
+#!/bin/bash 
+
+#
+
+if [ -z "$1" -o -z "$2" ];then
+   exit
+fi
+
+# for in mysql environment
+
+if [ "$1" = 'inmysql' ]; then
+   echo "$2" | sed -r -e "s/'/''/g" -e 's/\\/\\\\/g'
+   exit
+fi
+
+# for sed replacement environment
+
+if [ "$1" = 'sed' ]; then
+   echo "$2" | sed -r -e 's/\\/\\\\/g' -e "s/\//\\\\\//g" -e 's/\&/\\\&/g'
+   exit
+fi
