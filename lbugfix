@@ -1,0 +1,33 @@
+#!/bin/bash
+# ------------------------------------------------------
+# function:
+#          fix various linux bugs
+# ------------------------------------------------------
+
+
+# disable NetworkManager
+
+if [ -f /etc/init.d/network ]; then
+      /sbin/chkconfig network on
+      if [ -f /etc/init.d/NetworkManager -o -f /usr/lib/systemd/system/NetworkManager.service ]; then
+         # -----------------------------------------------------------------------------------------------------
+         # if  NetworkManager is started and NM_CONTROLLED=yes in file /etc/sysconfig/network-scripts/ifcfg-ethX
+         # network card will be managed by NetworkManager
+         # -----------------------------------------------------------------------------------------------------
+         # we prefer /etc/init.d/network
+         # -----------------------------------------------------------------------------------------------------
+         systemctl disable --now NetworkManager &>/dev/null
+      fi
+fi
+
+# disable dnsmasq 
+####
+#  如果是图形界面Linux安装了dnsmasq的话可能dns server会被设置为127.0.0.1，这会导致容器无法解析域名，建议关闭它
+####
+systemctl disable --now dnsmasq
+
+# enable User namespaces for docker and need reboot 
+
+grubby --args="user_namespace.enable=1" --update-kernel="$(grubby --default-kernel)"
+/root/cf/cfmsg docker "enable User namespaces need reboot"
+
