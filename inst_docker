@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# install common parts
+
+/root/cf/inst_com
+
+
+# install basic
+
+yum install -y yum-utils device-mapper-persistent-data lvm2
+
+
+# office check
+
+/root/cf/check-config.sh
+
+# aliyun
+
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum -y install docker-ce
+
+
+# config docker 
+
+mkdir -p /etc/docker/
+cat>/etc/docker/daemon.json<<EOF
+{
+  "bip": "172.17.0.1/16",
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "registry-mirrors": ["https://fz5yth0r.mirror.aliyuncs.com"],
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+  }
+}
+EOF
+
+# 
+
+yum install -y epel-release bash-completion 
+
+if [ -f /usr/share/bash-completion/completions/docker ];then
+   cp /usr/share/bash-completion/completions/docker /etc/bash_completion.d/
+fi
+
+# enable docker and start docker
+
+systemctl enable docker
+systemctl start docker
