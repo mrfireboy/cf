@@ -1,0 +1,70 @@
+#!/bin/bash
+# --------------------------------------------------
+# function:
+#          configure system parameters
+# --------------------------------------------------
+
+
+# mode mark
+
+if ! cat /etc/sysctl.conf | grep -E "^# mode added option$" >/dev/null; then
+   echo "# mode added option" >> /etc/sysctl.conf
+fi
+
+
+/root/cf/mod_config /etc/sysctl.conf "net.bridge.bridge-nf-call-ip6tables=1"          "# mode added option"
+/root/cf/mod_config /etc/sysctl.conf "net.bridge.bridge-nf-call-iptables=1"          "# mode added option"
+/root/cf/mod_config /etc/sysctl.conf "net.bridge.bridge-nf-call-arptables=1"          "# mode added option"
+
+
+# make effect
+
+/sbin/sysctl -p &>/dev/null
+
+
+
+# ulimit conf and systemd conf
+if ! cat /etc/pam.d/login | grep -P "^session[\t ]+required[\t ]+.*pam_limits.so" >/dev/null; then
+   echo "# The following line was added by cf msysctl script" >> /etc/pam.d/login
+   echo "session    required     pam_limits.so" >> /etc/pam.d/login
+fi
+if ! cat /etc/security/limits.conf | grep -P "^root[\t ]+-[\t ]+nofile[\t ]+1006154" > /dev/null; then
+   echo "# The following line was added by cf msysctl script"  >> /etc/security/limits.conf
+   echo "root - nofile 1006154" >> /etc/security/limits.conf
+fi
+if [ -f /etc/security/limits.d/90-nproc.conf ]; then
+  cat /etc/security/limits.d/90-nproc.conf | sed -re "/^([^#]|#[^ ])/ d " > /root/cf/tmp/Hnproc$$.tmp
+  {
+     echo "*          soft    nproc     1024"
+     echo "root       soft    nproc     unlimited"
+     echo "daemon     soft    nproc     10000"
+  }  >>  /root/cf/tmp/Hnproc$$.tmp
+  if ! cmp /etc/security/limits.d/90-nproc.conf /root/cf/tmp/Hnproc$$.tmp &>/dev/null; then
+     cp -f /root/cf/tmp/Hnproc$$.tmp /etc/security/limits.d/90-nproc.conf
+  fi
+  rm -f /root/cf/tmp/Hnproc$$.tmp
+fi
+
+#
+
+if ! cat /etc/redhat-release 2>/dev/null | grep -E " release [56]\..*" > /dev/null; then
+
+   #
+
+   /root/cf/rep_config "/etc/systemd/system.conf" "DefaultLimitNOFILE=.*"             "uncomment"
+   /root/cf/mod_config "/etc/systemd/system.conf" "DefaultLimitNOFILE=1006154"
+
+   /root/cf/rep_config "/etc/systemd/system.conf" "DefaultLimitNPROC=.*"              "uncomment"
+   /root/cf/mod_config "/etc/systemd/system.conf" "DefaultLimitNPROC=infinity"
+
+   /root/cf/rep_config "/etc/systemd/system.conf" "DefaultTimeoutStartSec=.*"         "uncomment"
+   /root/cf/mod_config "/etc/systemd/system.conf" "DefaultTimeoutStartSec=30min"
+
+   /root/cf/rep_config "/etc/systemd/system.conf" "DefaultTimeoutStopSec=.*"          "uncomment"
+   /root/cf/mod_config "/etc/systemd/system.conf" "DefaultTimeoutStopSec=30min"
+
+   #
+
+   systemctl daemon-reexec
+
+fi
