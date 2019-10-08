@@ -1,0 +1,34 @@
+#!/bin/bash
+
+
+
+
+# choice iptables 
+if [ -f /usr/lib/systemd/system/firewalld.service ]; then
+   if [ -f /usr/lib/systemd/system/iptables.service ]; then
+      # We disable firewalld and stop firewalld
+      systemctl disable --now firewalld &>/dev/null
+      #/sbin/service   firewalld stop &>/dev/null
+      # We plan to use iptables
+      Hfirewall_svc=iptables
+   else
+      Hfirewall_svc=firewalld
+   fi
+else
+   Hfirewall_svc=iptables
+fi
+
+
+# disable SELINUX
+
+if [ -f /etc/sysconfig/selinux ]; then
+   if grep -E "^SELINUX=" /etc/sysconfig/selinux >/dev/null; then
+      cat /etc/sysconfig/selinux | sed -re "s/^(SELINUX=).*/\1disabled/" > /root/cf/tmp/hsrvman$$.tmp
+      cp -f /root/cf/tmp/hsrvman$$.tmp /etc/sysconfig/selinux
+      rm -f /root/cf/tmp/hsrvman$$.tmp
+   else
+      echo "SELINUX=disabled" >> /etc/sysconfig/selinux
+   fi
+   /usr/sbin/setenforce 0 2>/dev/null
+fi
+
