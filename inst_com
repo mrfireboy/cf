@@ -1,0 +1,21 @@
+#!/bin/bash
+# --------------------------------------------------------------------------------------------
+# function:
+#           Install and configure what are required by docker
+# --------------------------------------------------------------------------------------------
+
+
+
+# manage linux services
+
+/root/cf/srvman
+
+
+# set /etc/sysctl.conf
+
+/root/cf/msysctl
+
+
+# linux bux fixes
+
+/root/cf/lbugfix
