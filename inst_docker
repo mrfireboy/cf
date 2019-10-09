@@ -52,3 +52,8 @@ fi
 
 systemctl enable docker
 systemctl start docker
+
+# loading docker complete  
+
+source /usr/share/bash-completion/completions/docker
+source /usr/share/bash-completion/bash_completion
