@@ -1,0 +1,16 @@
+#!/bin/bash
+# ------------------------------------------------------------------
+# function:
+#          centos7 install docker-compose
+#
+# ------------------------------------------------------------------
+
+if cat /etc/redhat-release  | grep -E  "release 7.*";then
+
+	yum install epel-release -y
+	yum install python2-pip -y
+	pip install docker-compose
+        # display docker-compose version
+	docker-compose version
+
+fi
