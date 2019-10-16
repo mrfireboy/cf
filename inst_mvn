@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# need jdk environment
+
+
+if [ -f /root/packs/apache-maven-3.6.2-bin.tar.gz ];then
+
+    cd  /root/packs/;
+    tar xzvf apache-maven-3.6.2-bin.tar.gz -C /usr/local/
+
+fi

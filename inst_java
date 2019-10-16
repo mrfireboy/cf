@@ -1,0 +1,14 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+# function:
+#           Install jdk8 to directory /usr/local/jdk6
+# ------------------------------------------------------------------------------
+# remarks :
+#           wget office jdk8 in /root/packs and extract to /usr/local/jdk6
+# ------------------------------------------------------------------------------
+
+
+[ -d /usr/local/jdk6 ] || mkdir -p /usr/local/jdk6 &&
+{
+tar xf /root/packs/jdk-8u221-linux-x64.tar.gz --directory /usr/local/jdk6 --strip-components 1
+}
