@@ -1,10 +1,10 @@
 #!/bin/bash
 
 
-if [ -f /root/packs/node-v12.12.0.tar.gz -a ! -d /usr/local/nodejs  ];then
-   tar  xf /root/packs/node-v12.12.0.tar.gz -C /usr/local/
+if [ -f /root/packs/node-v12.12.0-linux-x64.tar.xz -a ! -d /usr/local/nodejs  ];then
+   tar  xf /root/packs/node-v12.12.0-linux-x64.tar.xz -C /usr/local/
    cd /usr/local/
-   mv node-v12.12.0 nodejs
+   mv node-v12.12.0-linux-x64/ nodejs
    ln -s /usr/local/nodejs/bin/node /usr/local/bin
    ln -s /usr/local/nodejs/bin/npm /usr/local/bin
 fi
