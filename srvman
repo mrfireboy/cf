@@ -19,6 +19,49 @@ else
 fi
 
 
+# firewall configuration
+
+if /root/cf/cfgate noiptables; then
+   # disable firewall explicitly
+   /root/cf/mod_config /etc/sysctl.conf "net.ipv4.ip_forward=0"  "# cf added option"
+   /sbin/iptables -F
+   /sbin/iptables -X
+   /sbin/chkconfig $Hfirewall_svc off &>/dev/null
+   /sbin/service $Hfirewall_svc stop  &>/dev/null
+else
+   # enable firewall
+   /root/cf/mod_config /etc/sysctl.conf "net.ipv4.ip_forward=1"  "# cf added option"
+   /sbin/chkconfig $Hfirewall_svc off &>/dev/null
+   /sbin/chkconfig --level 35 $Hfirewall_svc on &>/dev/null
+   #
+   if /root/cf/cfgate iptables; then
+      # we open firewall,and we use iptables
+      touch /etc/sysconfig/iptables
+      touch /etc/sysconfig/ip6tables
+   else
+      # we open firewall,but we don't use iptables
+      >/etc/sysconfig/iptables
+      >/etc/sysconfig/ip6tables
+   fi
+   # our save
+   cp -f /etc/sysconfig/iptables /etc/sysconfig/iptables$$
+   cp -f /etc/sysconfig/ip6tables /etc/sysconfig/ip6tables$$
+   #
+   /sbin/iptables -L           &>/dev/null
+   if [ "$Hfirewall_svc" = "iptables" ]; then
+      /sbin/service iptables save &>/dev/null
+   fi
+   #
+   mv -f /etc/sysconfig/iptables$$  /etc/sysconfig/iptables
+   mv -f /etc/sysconfig/ip6tables$$ /etc/sysconfig/ip6tables
+   # stop first
+   /sbin/service $Hfirewall_svc stop &>/dev/null
+   # start later
+   /sbin/service $Hfirewall_svc start &>/dev/null
+fi
+
+
+
 # disable SELINUX
 
 if [ -f /etc/sysconfig/selinux ]; then
