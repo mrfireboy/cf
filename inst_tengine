@@ -1,0 +1,38 @@
+#!/bin/bash
+
+ng_prc=`ps -ef | grep nginx | grep -v grep`
+
+if [ -n "$ng_prc" -o  -d "/usr/local/nginx" ];then
+      
+      /root/cf/cfmsg "inst_tengine" "has existed nginx,please check it!" && exit 1
+      
+fi
+
+if [ -d /fenku/tengine ];then
+    
+     rm -rf /fenku/tengine     
+   
+fi
+
+mkdir -p /fenku/
+yum -y install gcc git openssl openssl-devel pcre pcre-devel
+cd /fenku
+git clone http://git.ihotel.cn:8087/public-tools/tengine.git
+
+chmod u+x /fenku/tengine/{configure,nginx,nginx.service}
+
+# configure and install nginx
+cd tengine
+./configure && make && make install
+
+# config power on server in centos6 or centos7 
+if ! cat /etc/redhat-release 2>/dev/null | grep -E " release [56]\..*" > /dev/null; then
+         
+
+      cp -p /fenku/tengine/nginx.service /usr/lib/systemd/system/;systemctl enable nginx.service
+
+else
+
+      cp -p /fenku/tengine/nginx /etc/init.d/;chkconfig nginx on
+
+fi
