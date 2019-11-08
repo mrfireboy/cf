@@ -3,6 +3,24 @@
 
 
 
+# /etc/sysconfig/iptables-config
+
+if cat /etc/redhat-release | grep -E " release 5\..*" > /dev/null; then
+   /root/cf/mod_config /etc/sysconfig/iptables-config "IPTABLES_MODULES=\"ip_conntrack_netbios_ns\""
+else
+   /root/cf/mod_config /etc/sysconfig/iptables-config "IPTABLES_MODULES=\"ip_conntrack\""
+fi
+
+
+# try to install iptables-services on CentOS 7.x
+
+if [ -f /usr/lib/systemd/system/firewalld.service -a ! -f /usr/lib/systemd/system/iptables.service ]; then
+   yum -y install iptables-services
+fi
+
+
+
+
 # choice iptables 
 if [ -f /usr/lib/systemd/system/firewalld.service ]; then
    if [ -f /usr/lib/systemd/system/iptables.service ]; then
