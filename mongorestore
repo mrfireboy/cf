@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# mongorestore -h <hostname><:port> -d dbname <path>
+
+
+
+
+#mongorestore -h127.0.0.1:32938 -d record DISK3/dump/mongodb_bak_now/2019_11_25/doracms2 --drop -ulvyun-pms -plvyunpms2017
+
+
+
+
+
+
+
