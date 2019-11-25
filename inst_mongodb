@@ -1,0 +1,70 @@
+#!/bin/sh
+
+#pre check
+# pid
+if [ `ps -ef | grep -E "mongod" | grep -v grep | grep -v inst_mongodb 2>/dev/null | wc -l` -gt 0 ];then
+
+   echo "may be you have installed mongodb,please check with ps -ef !" && exit 1
+
+fi
+
+
+# default dir
+if [ -d /var/lib/mongo ];then
+  
+   echo "may be you have installed mongodb,please check the dir of /var/lib/mongo !" && exit 1
+
+fi
+
+# default config file
+if [ -f /etc/mongod.conf ];then
+
+   echo "may be you have installed mongodb,please check the dir of /etc/mongod.conf !" && exit 1
+
+fi
+
+
+
+# add mongodb  repo file
+cat >/etc/yum.repos.d/mongodb-org-4.0.repo <<EOF
+[mongodb-org-4.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.0/x86_64/
+gpgcheck=0
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-4.0.asc
+EOF
+
+# yum install
+yum makecache
+yum -y install mongodb-org-server
+yum -y install mongodb-org-shell
+yum -y install mongodb-org-tools
+
+# start mongod first
+
+service mongod start
+
+# create admin user
+echo "db.createUser({user: 'lvyunAdmin',pwd: 'lvyunpms2019',roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ]})" | mongo localhost/admin;
+
+# 添加数据库账号
+echo "db.createUser({user: 'lvyun-pms',pwd: 'lvyunpms2017',roles: [ { role: 'readWrite', db: 'record'}]})" | mongo localhost/record;
+
+# modify default 27017 -> 32938
+sed -i  "s/port: 27017/port: 32938/g" /etc/mongod.conf
+
+# add auth authorization
+cat >>/etc/mongod.conf <<EOF
+security:
+  authorization: enabled
+EOF
+
+# restart mongod
+service mongod restart
+
+# chkconfig on
+chkconfig mongod on
+
+# muti role es.
+# db.createUser({user: "lvyun",pwd: "lvyunpms2017",roles: [ { role: "readWrite", db: "record" } ]})
