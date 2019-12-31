@@ -24,6 +24,7 @@ yum -y install tcl
 {
 cd /opt;
 tar xzvf redis-5.0.5.tar.gz
+cd /opt/redis-5.0.5
 # make and make install
 make;
 make PREFIX=/usr/local/redis install;
