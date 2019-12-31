@@ -10,12 +10,11 @@
 
 /root/cf/srvman
 
-
 # set /etc/sysctl.conf
 
 /root/cf/msysctl
 
-
 # linux bux fixes
 
 /root/cf/lbugfix
+

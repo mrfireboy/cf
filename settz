@@ -1,0 +1,144 @@
+#!/bin/bash
+# -------------------------------------------------
+# function:
+#          set locale for CentOS 7.x
+#          set timezone 
+#          set date using timezone information
+# -------------------------------------------------
+
+# exclusive execution with wait mode
+
+/root/mode/modepv settz $$ " /bin/bash .*/settz"
+
+#
+
+if ! /root/mode/amiroot &>/dev/null; then
+   echo "You must login as root" && exit 1
+fi
+
+# LANG=zh_CN.utf8 on CentOS 7.x will lead to Chinese stdout/stderr outputs for some commands,which are not expected.
+
+if cat /etc/redhat-release 2>/dev/null | grep -E " release 7\." > /dev/null; then
+   localectl set-locale LANG=en_US.utf8
+fi
+
+# ---------------------------------------------------------------------------------
+# Get the zone information  
+# ---------------------------------------------------------------------------------
+
+if ls -l /etc/localtime | grep -E "/usr/share/zoneinfo" &>/dev/null; then
+   HZONE=`ls -l /etc/localtime | sed -re "s/^.*\/(.*)\/([^/]+) *$/\1\/\2/"`
+   HZONE1=`echo "$HZONE" | sed -re "s/(.*)\/(.*)/\1/"`
+   HZONE2=`echo "$HZONE" | sed -re "s/(.*)\/(.*)/\2/"`
+elif cat /etc/sysconfig/clock 2>/dev/null | grep -E "^ZONE" >/dev/null; then
+   HZONE=`cat /etc/sysconfig/clock 2>/dev/null | grep -E "^ZONE" | tail -n 1 | sed -re "s/^ZONE=['\"]?([^'\"]*)['\"]? */\1/"`
+   HZONE1=`echo "$HZONE" | sed -re "s/(.*)\/(.*)/\1/"`
+   HZONE2=`echo "$HZONE" | sed -re "s/(.*)\/(.*)/\2/"`
+else
+   HZONE="Asia/Shanghai"
+   HZONE1="Asia"
+   HZONE2="Shanghai"
+fi
+
+# ---------------------------------------------------------------------------------
+# save the current system time because setting time zone will change system time
+# ---------------------------------------------------------------------------------
+
+HS_DATE=`date +%m%d%H%M%Y.%S`
+
+# ---------------------------------------------------------------------------------
+# Generally,there is no file /etc/sysconfig/clock on CentOS 7.x(except on Ali cloud).
+# But there is no Zone information in Ali /etc/sysconfig/clock.
+# We create file /etc/sysconfig/clock if it doesn't exist for maximal compatibility 
+# ---------------------------------------------------------------------------------
+
+if [ ! -f /etc/sysconfig/clock ]; then 
+   {
+      echo "# This file is created by mode"
+      echo "# Symbolic information in /etc/localtime or zone value in this file or Asia/Shanghai will be used as the final time zone value."
+      echo "# The final time zone value will be used to reset /etc/localtime and /etc/sysconfig/clock to keep them consistent." 
+      echo "ZONE=\"$HZONE\""
+   }> /etc/sysconfig/clock
+elif ! cat /etc/sysconfig/clock | grep -E '^ZONE' >/dev/null; then 
+   echo "ZONE=\"$HZONE\"" >> /etc/sysconfig/clock
+fi
+
+# --------------------------------------------------------------------------------------------------------------------------------------
+# set time zone,and set UTC=false (for CentOS 5.x and 6.x ) if the UTC item exists
+# Note:The UTC= item in /etc/sysconfig/clock on CentOS 7.x is only a hint.See 'RTC in local TZ:' value by executing 'timedatectl status'
+# --------------------------------------------------------------------------------------------------------------------------------------
+
+# 
+rm -f /etc/localtime 
+ln -s /usr/share/zoneinfo/$HZONE1/$HZONE2 /etc/localtime
+#
+if cat /etc/redhat-release | grep -E " release 7\." > /dev/null; then
+   # The 'timedatectl set-timezone' is not safe if /etc/localtime doesn't exist
+   timedatectl set-timezone $HZONE1/$HZONE2
+else
+   TMPFILE="/root/mode/tmp/hrysettz$$.tmp"
+   cp -f /etc/sysconfig/clock $TMPFILE
+   cat $TMPFILE | sed -e "s/^ZONE=.*/ZONE=\"$HZONE1\/$HZONE2\"/" | sed -e "s/^UTC=.*/UTC=false/" | sed -e "s/^ARC=.*/ARC=false/" > /etc/sysconfig/clock
+fi
+
+# set system time from $HS_DATE
+
+date $HS_DATE &>/dev/null
+
+# get the rtc time mark which indicates the rtc time is local or utc 
+
+if cat /etc/redhat-release | grep -E " release 7\." > /dev/null; then
+   Hrtc_is_local=`timedatectl status | grep -E 'RTC in local TZ:' | awk '{print $NF}'`
+elif cat /etc/sysconfig/clock 2>/dev/null | grep -E "^UTC=" >/dev/null; then
+   # UTC already set to false
+   Hrtc_is_local=yes
+else
+   Hrtc_is_local=no
+fi
+
+# set hardware time.As a result,we also get a default value LOCAL or UTC in /etc/adjtime
+
+if [ "$Hrtc_is_local" = "yes" ]; then 
+   /sbin/hwclock --systohc --localtime
+   if hostname | grep -E '^VM_' >/dev/null && uname -a | grep -E " 2\.6\.18-" >/dev/null; then
+      if [ -x /etc/rc.d/rc.sysinit ]; then
+         if ! cat /etc/rc.d/rc.sysinit | grep -E '/root/mode/\.adjdate' >/dev/null; then
+            if [ `cat /etc/rc.d/rc.sysinit | grep 'hwclock' | wc -l` -eq 1 ]; then
+               cat /etc/rc.d/rc.sysinit | sed -re "/hwclock/ a /root/mode/.adjdate 28800" > $TMPFILE
+               cp -f $TMPFILE /etc/rc.d/rc.sysinit
+               chmod 755 /etc/rc.d/rc.sysinit
+            fi
+         fi
+      fi
+   fi
+else
+   /sbin/hwclock --systohc --utc
+fi
+
+# synchronize system time with cmos time 
+
+if [ -e /etc/crontab ]; then
+   if hostname | grep -E '^VM_' >/dev/null >/dev/null; then
+      if cat /etc/crontab | grep "hwclock" >/dev/null; then
+         cat /etc/crontab | sed -re "s/^(#*)(.*hwclock.*)/#\2/" > $TMPFILE
+         if ! cmp $TMPFILE /etc/crontab &>/dev/null; then
+            cp -f $TMPFILE /etc/crontab
+         fi
+      fi
+   else
+      if ! cat /etc/crontab | grep "root hwclock -s" >/dev/null; then
+         echo "*/5 * * * * root hwclock -s" >> /etc/crontab
+      fi
+   fi
+fi
+
+#
+
+/sbin/service crond restart &>/dev/null
+
+# remove tmp file
+
+rm -f $TMPFILE
+
+# end
+

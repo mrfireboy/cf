@@ -47,6 +47,9 @@ service mongod start
 
 # create admin user
 echo "db.createUser({user: 'lvyunAdmin',pwd: 'lvyunpms2019',roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ]})" | mongo localhost/admin;
+#if want to drop 
+## role can be root like this
+## db.createUser({user: 'lvyunAdmin',pwd: 'lvyunpms2019',roles: [ { role: 'root', db: 'admin' } ]})
 
 # 添加数据库账号
 echo "db.createUser({user: 'lvyun-pms',pwd: 'lvyunpms2017',roles: [ { role: 'readWrite', db: 'record'}]})" | mongo localhost/record;

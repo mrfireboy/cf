@@ -1,0 +1,30 @@
+#!/bin/sh
+
+
+#pre check
+# pid
+if [ `ps -ef | grep -E "redis" | grep -v grep | grep -v inst_redis 2>/dev/null | wc -l` -gt 0 ];then
+
+   echo "may be you have installed redis ,please check with ps -ef !" && exit 1
+
+fi
+
+
+# default dir
+if [ -d /usr/local/redis ];then
+
+   echo "may be you have installed redis,please check the dir of /usr/local/redis !" && exit 1
+
+fi
+
+#install or upgrade the tcl
+yum -y install tcl
+
+# install redis
+{
+cd /opt;
+tar xzvf redis-5.0.5.tar.gz
+# make and make install
+make;
+make PREFIX=/usr/local/redis install;
+}
