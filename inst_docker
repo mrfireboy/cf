@@ -16,8 +16,14 @@ yum install -y yum-utils device-mapper-persistent-data lvm2
 
 # aliyun
 
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-yum -y install docker-ce
+#yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+#yum -y install docker-ce
+
+wget -O /etc/yum.repos.d/docker-ce.repo https://repo.huaweicloud.com/docker-ce/linux/centos/docker-ce.repo
+sed -i 's+download.docker.com+repo.huaweicloud.com/docker-ce+' /etc/yum.repos.d/docker-ce.repo
+yum makecache fast
+yum install docker-ce
+
 
 
 # config docker 
